@@ -1,7 +1,4 @@
 venv/
 models/
-*.7z
-*.zip
 __pycache__/
 *.pyc
-OUTPUT_PACKAGE/
