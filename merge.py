@@ -1,51 +1,78 @@
-import subprocess
 from pathlib import Path
+import zipfile
 
 # =========================
 # CONFIG
 # =========================
 
-# Path to 7zip
-SEVEN_ZIP = r"C:\Program Files\7-Zip\7z.exe"
+PARTS_DIR = Path(r"C:\Users\abhis\Desktop\STT\PACKAGE_OUTPUT")
 
-# Folder containing split files
-ARCHIVE_FOLDER = Path(r"C:\Users\abhis\Downloads")
+MERGED_ZIP = PARTS_DIR / "whisper_project_merged.zip"
 
-# First split file
-FIRST_PART = ARCHIVE_FOLDER / "whisper_project.7z.001"
-
-# Extraction output folder
-OUTPUT_FOLDER = ARCHIVE_FOLDER / "EXTRACTED_PROJECT"
+EXTRACT_DIR = PARTS_DIR / "EXTRACTED_PROJECT"
 
 # =========================
-# CREATE OUTPUT FOLDER
+# FIND PART FILES
 # =========================
 
-OUTPUT_FOLDER.mkdir(exist_ok=True)
+part_files = sorted(
+    PARTS_DIR.glob("whisper_project.zip.part*")
+)
 
-print("\n[1] Starting extraction...")
+print("\n[1] Found Parts:")
+
+for p in part_files:
+    print(p.name)
+
+# =========================
+# MERGE
+# =========================
+
+print("\n[2] Merging parts...")
+
+with open(MERGED_ZIP, "wb") as merged:
+
+    for part in part_files:
+
+        print(f"Adding: {part.name}")
+
+        with open(part, "rb") as pf:
+
+            while True:
+
+                chunk = pf.read(1024 * 1024)
+
+                if not chunk:
+                    break
+
+                merged.write(chunk)
+
+print("[OK] Merge completed.")
+
+# =========================
+# VALIDATE ZIP
+# =========================
+
+print("\n[3] Validating zip...")
+
+if not zipfile.is_zipfile(MERGED_ZIP):
+    print("[ERROR] Merged file is NOT valid zip.")
+    exit()
+
+print("[OK] Zip validation successful.")
 
 # =========================
 # EXTRACT
 # =========================
 
-cmd = [
-    SEVEN_ZIP,
-    "x",
-    str(FIRST_PART),
-    f"-o{OUTPUT_FOLDER}",
-    "-y"
-]
+print("\n[4] Extracting...")
 
-result = subprocess.run(cmd)
+EXTRACT_DIR.mkdir(exist_ok=True)
 
-# =========================
-# RESULT
-# =========================
+with zipfile.ZipFile(MERGED_ZIP, "r") as zipf:
+    zipf.extractall(EXTRACT_DIR)
 
-if result.returncode == 0:
-    print("\n[SUCCESS] Project extracted successfully.")
-    print("\nLocation:")
-    print(OUTPUT_FOLDER)
-else:
-    print("\n[ERROR] Extraction failed.")
+print("\n[SUCCESS] Extraction completed.")
+
+print("\nExtracted To:")
+print(EXTRACT_DIR)
